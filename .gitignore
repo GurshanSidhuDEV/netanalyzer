@@ -6,3 +6,5 @@ __pycache__/
 *.pcap
 *.pcapng
 !data/sample_small.pcap
+*.egg-info/
+build/
