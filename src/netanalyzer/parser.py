@@ -1,6 +1,6 @@
 """Read a packet capture and turn it into a pandas table."""
 import pandas as pd
-from scapy.all import DNS, ICMP, IP, TCP, UDP, ARP, rdpcap
+from scapy.all import ARP, DNS, ICMP, IP, TCP, UDP, rdpcap
 
 def classify(pkt):
     if pkt.haslayer(DNS):
@@ -15,8 +15,27 @@ def classify(pkt):
         return "ARP"
     return "OTHER"
 
+def dns_query_name(pkt):
+    if not pkt.haslayer(DNS):
+        return None
+    try:
+        dns = pkt[DNS]
+        if dns.qr != 0:  # 0 means query, 1 means answer
+            return None
+        qd = dns.qd
+        if isinstance(qd, list):
+            qd = qd[0] if qd else None
+        if qd is None:
+            return None
+        name = qd.qname
+        if isinstance(name, bytes):
+            name = name.decode("utf-8", errors="replace")
+        return name.rstrip(".").lower()
+    except (AttributeError, IndexError, TypeError):
+        return None
+
 def load_capture(path):
-    """Load a packet capture and return a pandas DataFrame with one row per packet."""
+
     rows = []
     for pkt in rdpcap(path):
         row = {
@@ -28,6 +47,7 @@ def load_capture(path):
             "sport": None,
             "dport": None,
             "flags": None,
+            "dns_query": dns_query_name(pkt),
         }
         if pkt.haslayer(IP):
             row["src"] = pkt[IP].src

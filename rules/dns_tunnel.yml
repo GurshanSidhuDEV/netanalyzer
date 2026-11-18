@@ -1,0 +1,18 @@
+title: Possible DNS tunneling
+id: NA-003
+status: experimental
+description: One host sends many DNS queries with long, random-looking subdomains under the same parent domain.
+attack:
+  tactic: Command and Control
+  technique: T1071.004
+  name: Application Layer Protocol - DNS
+detection:
+  type: dns_tunnel
+  min_subdomain_length: 20
+  min_entropy: 4
+  min_label_length: 25
+  min_unique_subdomains: 10
+  ignore_suffixes:
+    - in-addr.arpa
+    - ip6.arpa
+level: medium

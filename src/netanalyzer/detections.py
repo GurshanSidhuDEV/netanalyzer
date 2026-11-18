@@ -1,3 +1,5 @@
+import math
+from collections import Counter
 from pathlib import Path
 
 import yaml
@@ -85,7 +87,55 @@ def detect_syn_floods(df, rule):
                 break
     return alerts
 
-DETECTORS = {"port_scan": detect_port_scans, "syn_flood": detect_syn_floods}
+def shannon_entropy(text):
+    """Bits of randomness per character: 0 for 'aaaa', higher for random strings."""
+    counts = Counter(text)
+    total = len(text)
+    return -sum((c / total) * math.log2(c / total) for c in counts.values())
+
+def detect_dns_tunneling(df, rule):
+    """Flag hosts sending many long, random-looking subdomains to one parent domain."""
+    cfg = rule["detection"]
+    queries = df.dropna(subset=["src", "dns_query"])
+
+    seen = {}
+    for src, name in zip(queries["src"], queries["dns_query"]):
+        if name.endswith(tuple(cfg["ignore_suffixes"])):
+            continue  # reverse lookups look random but are normal
+        labels = name.split(".")
+        if len(labels) < 3:
+            continue  # no subdomain to inspect
+        parent = ".".join(labels[-2:])
+        subdomain = ".".join(labels[:-2])
+        if len(subdomain) < cfg["min_subdomain_length"]:
+            continue
+        if max(len(label) for label in subdomain.split(".")) < cfg["min_label_length"]:
+            continue
+        entropy = shannon_entropy(subdomain)
+        if entropy >= cfg["min_entropy"]:
+            seen.setdefault((src, parent), {})[subdomain] = entropy
+
+    alerts = []
+    for (src, parent), subs in seen.items():
+        if len(subs) >= cfg["min_unique_subdomains"]:
+            avg = sum(subs.values()) / len(subs)
+            alerts.append({
+                "rule_id": rule["id"],
+                "title": rule["title"],
+                "level": rule["level"],
+                "technique": rule["attack"]["technique"],
+                "src": src,
+                "dst": parent,
+                "evidence": f"{len(subs)} unique random-looking subdomains "
+                            f"(avg entropy {avg:.1f} bits/char)",
+            })
+    return alerts
+
+DETECTORS = {
+    "port_scan": detect_port_scans,
+    "syn_flood": detect_syn_floods,
+    "dns_tunnel": detect_dns_tunneling,
+}
 
 def run_rules(df, rules):
     alerts = []
