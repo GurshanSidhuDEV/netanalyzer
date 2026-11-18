@@ -1,0 +1,29 @@
+captures:
+  - file: data/sample_small.pcap
+    description: Benign home-network traffic (Skype, IRC, DNS)
+    attack: false
+    expected: []
+  - file: data/nmap/nmap_standard_scan
+    description: Default Nmap scan of about 1,000 TCP ports
+    attack: true
+    expected: [NA-001]
+  - file: data/nmap/nmap_OS_scan
+    description: OS detection scan; includes a full port scan (only filtered ports)
+    attack: true
+    expected: [NA-001]
+  - file: data/nmap/nmap_OS_scan_succesful
+    description: OS detection scan against a host with one open and one closed port
+    attack: true
+    expected: [NA-001]
+  - file: data/nmap/nmap_ACK_scan_on_port_80
+    description: Single-port ACK scan; blind spot (no SYNs, one port)
+    attack: true
+    expected: []
+  - file: data/nmap/nmap_ACK_scan_on_port_80_2
+    description: Single-port ACK scan with fragmentation and spoofed source; blind spot
+    attack: true
+    expected: []
+  - file: data/nmap/nmap_zombie_scan
+    description: Idle scan via a zombie host; blind spot
+    attack: true
+    expected: []
