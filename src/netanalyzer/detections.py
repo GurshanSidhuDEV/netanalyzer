@@ -43,7 +43,49 @@ def detect_port_scans(df, rule):
                 break  #one alert per pair is enough
     return alerts
 
-DETECTORS = {"port_scan": detect_port_scans}
+def detect_syn_floods(df, rule):
+    """Flag targets that receive many connection attempts that never complete."""
+    cfg = rule["detection"]
+    window = cfg["window_seconds"]
+    threshold = cfg["half_open_syns"]
+
+    tcp = df[df["protocol"] == "TCP"].dropna(subset=["src", "dst", "sport", "dport"]).copy()
+    tcp[["sport", "dport"]] = tcp[["sport", "dport"]].astype(int)
+
+    key = ["src", "sport", "dst", "dport"]
+
+    syns = tcp[tcp["flags"] == "S"].drop_duplicates(subset=key)
+
+    progressed = tcp[~tcp["flags"].isin(["S", "SA"])]
+    completed = set(map(tuple, progressed[key].values))
+
+    half_open = syns[[tuple(row) not in completed for row in syns[key].values]]
+
+    alerts = []
+    for (dst, dport), group in half_open.groupby(["dst", "dport"]):
+        group = group.sort_values("time")
+        times = group["time"].tolist()
+        start = 0
+        for end in range(len(times)):
+            while times[end] - times[start] > window:
+                start += 1
+            count = end - start + 1
+            if count >= threshold:
+                sources = group["src"].iloc[start:end + 1].nunique()
+                alerts.append({
+                    "rule_id": rule["id"],
+                    "title": rule["title"],
+                    "level": rule["level"],
+                    "technique": rule["attack"]["technique"],
+                    "src": f"{sources} source(s)",
+                    "dst": f"{dst}:{dport}",
+                    "first_seen": times[start],
+                    "evidence": f"{count} half-open connections in {window}s",
+                })
+                break
+    return alerts
+
+DETECTORS = {"port_scan": detect_port_scans, "syn_flood": detect_syn_floods}
 
 def run_rules(df, rules):
     alerts = []

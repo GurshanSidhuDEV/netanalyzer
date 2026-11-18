@@ -1,0 +1,13 @@
+title: Possible SYN flood
+id: NA-002
+status: experimental
+description: Many TCP connection attempts to one service are started but never completed.
+attack:
+  tactic: Impact
+  technique: T1498
+  name: Network Denial of Service
+detection:
+  type: syn_flood
+  half_open_syns: 100
+  window_seconds: 5
+level: high
