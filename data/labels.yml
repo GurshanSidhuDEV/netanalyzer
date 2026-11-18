@@ -27,3 +27,19 @@ captures:
     description: Idle scan via a zombie host; blind spot
     attack: true
     expected: []
+  - file: data/synthetic/syn_flood.pcap
+    description: SYNTHETIC - 300 spoofed sources send SYNs to one port and never complete
+    attack: true
+    expected: [NA-002]
+  - file: data/synthetic/dns_tunnel.pcap
+    description: SYNTHETIC - one host sends 40 random-looking 40-character subdomains to one parent domain
+    attack: true
+    expected: [NA-003]
+  - file: data/synthetic/benign_busy_server.pcap
+    description: SYNTHETIC - 300 clients connect to one web server and finish every handshake
+    attack: false
+    expected: []
+  - file: data/synthetic/benign_dns.pcap
+    description: SYNTHETIC - normal lookups, ISP-style hostnames, and reverse lookups
+    attack: false
+    expected: []
