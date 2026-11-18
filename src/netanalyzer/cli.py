@@ -3,6 +3,7 @@ import sys
 
 import pandas as pd
 
+from netanalyzer.detections import load_rules, run_rules
 from netanalyzer.parser import load_capture
 
 def main():
@@ -17,6 +18,14 @@ def main():
     print("\nPackets per minute:")
     times = pd.to_datetime(df["time"], unit="s")
     print(df.set_index(times).resample("1min").size())
+
+    print("\nAlerts:")
+    alerts = run_rules(df, load_rules("rules"))
+    if not alerts:
+        print("  none")
+    for a in alerts:
+        print(f"  [{a['level']}] {a['title']} ({a['technique']}): "
+              f"{a['src']} -> {a['dst']} - {a['evidence']}")
 
 if __name__ == "__main__":
     main()

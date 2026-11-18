@@ -1,0 +1,15 @@
+title: Possible TCP port scan
+id: NA-001
+status: experimental
+description: One source sends SYN packets to many distinct ports on one host in a short time.
+attack:
+  tactic: Discovery
+  technique: T1046
+  name: Network Service Discovery
+detection:
+  type: port_scan
+  protocol: TCP
+  flags: S
+  distinct_ports: 15
+  window_seconds: 10
+level: medium
