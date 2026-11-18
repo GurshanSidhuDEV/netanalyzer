@@ -8,3 +8,4 @@ __pycache__/
 !data/sample_small.pcap
 *.egg-info/
 build/
+data/nmap/

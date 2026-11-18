@@ -35,3 +35,7 @@ def test_ignores_busy_server_when_handshakes_complete():
 def test_retransmitted_syns_count_once():
     rows = [pkt(i * 0.01, "10.0.0.5", 40000, "S") for i in range(300)]
     assert detect_syn_floods(pd.DataFrame(rows), RULE) == []
+    
+def test_capture_without_syns_does_not_crash():
+    rows = [pkt(i * 0.01, "10.0.0.5", 40000, "A", dport=80) for i in range(50)]
+    assert detect_syn_floods(pd.DataFrame(rows), RULE) == []

@@ -40,7 +40,9 @@ def detect_port_scans(df, rule):
                     "src": src,
                     "dst": dst,
                     "first_seen": times[start],
-                    "evidence": f"{len(distinct)} distinct ports in {window}s",
+                    "evidence": f"{len(distinct)} distinct ports in {window}s; "
+                                f"{group['dport'].nunique()} distinct ports probed in total",
+
                 })
                 break  #one alert per pair is enough
     return alerts
@@ -61,7 +63,11 @@ def detect_syn_floods(df, rule):
     progressed = tcp[~tcp["flags"].isin(["S", "SA"])]
     completed = set(map(tuple, progressed[key].values))
 
-    half_open = syns[[tuple(row) not in completed for row in syns[key].values]]
+    # Keep only the attempts that never progressed (half-open).
+    if syns.empty:
+        return []  # no SYN packets at all (e.g. an ACK scan), nothing to flag
+    mask = [tuple(row) not in completed for row in syns[key].values]
+    half_open = syns.loc[mask]
 
     alerts = []
     for (dst, dport), group in half_open.groupby(["dst", "dport"]):
