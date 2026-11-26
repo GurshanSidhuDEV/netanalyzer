@@ -73,24 +73,29 @@ def detect_syn_floods(df, rule):
     for (dst, dport), group in half_open.groupby(["dst", "dport"]):
         group = group.sort_values("time")
         times = group["time"].tolist()
+        srcs = group["src"].tolist()
+
         start = 0
+        peak, peak_start, peak_end = 0, 0, 0
         for end in range(len(times)):
             while times[end] - times[start] > window:
                 start += 1
             count = end - start + 1
-            if count >= threshold:
-                sources = group["src"].iloc[start:end + 1].nunique()
-                alerts.append({
-                    "rule_id": rule["id"],
-                    "title": rule["title"],
-                    "level": rule["level"],
-                    "technique": rule["attack"]["technique"],
-                    "src": f"{sources} source(s)",
-                    "dst": f"{dst}:{dport}",
-                    "first_seen": times[start],
-                    "evidence": f"{count} half-open connections in {window}s",
-                })
-                break
+            if count > peak:
+                peak, peak_start, peak_end = count, start, end
+                
+        if peak >= threshold:
+            sources = len(set(srcs[peak_start:peak_end + 1]))
+            alerts.append({
+                "rule_id": rule["id"],
+                "title": rule["title"],
+                "level": rule["level"],
+                "technique": rule["attack"]["technique"],
+                "src": f"{sources} source(s)",
+                "dst": f"{dst}:{dport}",
+                "first_seen": times[peak_start],
+                "evidence": f"{peak} half-open connections in {window}s",
+            })
     return alerts
 
 def shannon_entropy(text):
