@@ -18,7 +18,8 @@ captures = list_captures(conn)
 if captures.empty:
     st.info("No captures stored yet. Run: python3 -m netanalyzer.save_captures <capture files>")
     st.stop()
-labels = {int(row.id): f"{Path(row.path).name} ({row.alerts} alerts)"
+labels = {int(row.id): f"{Path(row.path).name} "
+                       f"({row.alerts} alert{'' if row.alerts == 1 else 's'})"
           for row in captures.itertuples()}
 capture_id = st.sidebar.selectbox("Capture", options=list(labels), format_func=labels.get)
 bucket = st.sidebar.select_slider("Time bucket (seconds)", options=[1, 5, 10, 30, 60, 300], value=60)
